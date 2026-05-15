@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangBuddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#e8b84b;--gold-dim:rgba(232,184,75,0.13);--gold-border:rgba(232,184,75,0.27);
+  --bg:#0d0d18;--bg2:#13131f;--bg3:#1a1a28;
+  --text:#eceadf;--text-dim:rgba(236,234,223,0.5);--text-faint:rgba(236,234,223,0.28);
+  --green:rgba(72,210,120,0.9);--green-bg:rgba(72,210,120,0.08);--green-border:rgba(72,210,120,0.22);
+  --blue:rgba(140,175,255,0.88);--blue-bg:rgba(100,145,255,0.08);--blue-border:rgba(100,145,255,0.22);
+  --orange:rgba(255,168,90,0.9);--orange-bg:rgba(255,145,70,0.08);--orange-border:rgba(255,145,70,0.22);
+  --red:rgba(255,95,95,0.9);--red-bg:rgba(255,70,70,0.10);--red-border:rgba(255,70,70,0.27);
+  --radius:14px;--radius-sm:9px;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Source Serif 4',Georgia,serif;}
+body{display:flex;flex-direction:column;align-items:center;padding:0 16px 60px;}
+.screen{width:100%;max-width:660px;display:none;flex-direction:column;gap:14px;}
+.screen.active{display:flex;}
+
+/* header */
+.hdr{padding:26px 0 14px;text-align:center;border-bottom:1px solid rgba(232,184,75,0.12);margin-bottom:4px;width:100%;}
+.hdr-flag{font-size:34px;margin-bottom:4px;}
+.hdr h1{font-family:'Playfair Display',serif;font-size:clamp(20px,5vw,28px);color:var(--gold);letter-spacing:.04em;margin-bottom:4px;}
+.hdr p{color:var(--text-dim);font-size:12px;font-style:italic;}
+.hdr-badges{display:flex;justify-content:center;gap:7px;margin-top:9px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:20px;font-size:11px;}
+.badge-live{background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold);}
+.badge-saved{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);display:none;}
+.badge-stats{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);cursor:pointer;display:none;}
+.badge-cfg{background:var(--bg3);border:1px solid rgba(255,255,255,0.09);color:var(--text-dim);cursor:pointer;}
+.pulse{width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;animation:blink 2s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* cards */
+.card{background:var(--bg2);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius);padding:26px 22px;}
+.card-gold{border-color:var(--gold-border);}
+.card h2{font-family:'Playfair Display',serif;color:var(--gold);font-size:17px;margin-bottom:8px;}
+.card p{color:var(--text-dim);font-size:13px;line-height:1.8;}
+
+/* form */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;color:var(--text-faint);letter-spacing:.07em;text-transform:uppercase;}
+.field select,.field input{background:var(--bg3);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-size:13px;font-family:'Source Serif 4',Georgia,serif;outline:none;transition:border-color .2s;width:100%;}
+.field select:focus,.field input:focus{border-color:rgba(232,184,75,.4);}
+.field .hint-f{font-size:11px;color:var(--text-faint);font-style:italic;line-height:1.5;}
+.field a{color:var(--gold);text-decoration:none;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:480px){.grid-2{grid-template-columns:1fr;}}
+
+/* level picker */
+.levels{display:flex;gap:7px;flex-wrap:wrap;}
+.lvl-btn{background:var(--bg3);border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-sm);padding:8px 0;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:'Source Serif 4',Georgia,serif;transition:all .15s;flex:1;text-align:center;line-height:1.4;}
+.lvl-btn span{display:block;font-size:10px;opacity:.55;margin-top:2px;}
+.lvl-btn:hover{border-color:var(--gold-border);color:var(--gold);}
+.lvl-btn.sel{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold);}
+
+/* buttons */
+.btn{border:none;border-radius:var(--radius-sm);cursor:pointer;font-family:'Playfair Display',serif;letter-spacing:.03em;transition:all .15s;}
+.btn-primary{background:linear-gradient(135deg,#a07008,var(--gold));color:#0d0d18;padding:12px 26px;font-size:14px;font-weight:700;}
+.btn-primary:hover{filter:brightness(1.08);}
+.btn-primary:disabled{background:rgba(255,255,255,.07);color:rgba(255,255,255,.28);cursor:not-allowed;}
+.btn-ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:var(--text-dim);padding:8px 14px;font-size:12px;}
+.btn-ghost:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.btn-danger{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);padding:5px 13px;font-size:11px;border-radius:var(--radius-sm);cursor:pointer;}
+
+/* warn */
+.warn{background:var(--red-bg);border:1px solid var(--red-border);border-radius:var(--radius-sm);padding:9px 13px;font-size:12px;color:var(--red);line-height:1.6;display:none;}
+
+/* divider */
+hr.div{border:none;border-top:1px solid rgba(255,255,255,.07);margin:4px 0;}
+
+/* chat */
+.chat-box{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:14px 12px;min-height:260px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.chat-box::-webkit-scrollbar{width:4px;}
+.chat-box::-webkit-scrollbar-thumb{background:rgba(232,184,75,.18);border-radius:4px;}
+.msg{display:flex;flex-direction:column;}
+.msg.user{align-items:flex-end;}
+.msg.agent{align-items:flex-start;}
+.bubble{max-width:86%;padding:10px 13px;font-size:13px;line-height:1.75;}
+.bubble.user{background:linear-gradient(135deg,rgba(232,184,75,.16),rgba(170,118,8,.10));border:1px solid rgba(232,184,75,.26);border-radius:17px 17px 4px 17px;color:#f5eab6;}
+.bubble.agent{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:17px 17px 17px 4px;color:#f0f0ee;}
+.bubble-tr{margin-top:6px;color:rgba(180,160,90,.68);font-size:11px;font-style:italic;border-top:1px solid rgba(255,255,255,.06);padding-top:5px;line-height:1.6;}
+.msg-lbl{font-size:10px;color:rgba(150,130,70,.48);margin-top:3px;display:flex;align-items:center;gap:5px;}
+.btn-tts{background:none;border:none;cursor:pointer;color:rgba(232,184,75,.38);font-size:12px;padding:0;line-height:1;transition:color .2s;}
+.btn-tts:hover,.btn-tts.on{color:var(--gold);}
+.typing{display:flex;align-items:center;gap:5px;padding:5px 12px;}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(232,184,75,.5);animation:bounce 1.2s ease infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+
+/* topics */
+.sec-lbl{font-size:10px;color:var(--text-faint);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;}
+.topics-wrap{display:flex;flex-wrap:wrap;gap:6px;}
+.btn-topic{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:4px 11px;color:rgba(220,198,130,.78);font-size:11px;cursor:pointer;font-family:'Source Serif 4',Georgia,serif;transition:all .15s;}
+.btn-topic:hover{background:var(--gold-dim);border-color:var(--gold-border);}
+.btn-topic:disabled{opacity:.38;cursor:not-allowed;}
+
+/* audio / input */
+.audio-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:7px 13px;font-size:11px;color:var(--text-dim);}
+.audio-bar label{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
+.audio-bar input[type=checkbox]{accent-color:var(--gold);width:13px;height:13px;}
+.sep{width:1px;height:13px;background:rgba(255,255,255,.07);}
+.input-row{display:flex;gap:8px;align-items:stretch;}
+.chat-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text);font-size:13px;font-family:'Source Serif 4',Georgia,serif;outline:none;transition:border-color .2s;}
+.chat-input:focus{border-color:rgba(232,184,75,.38);}
+.chat-input::placeholder{color:var(--text-faint);}
+.chat-input:disabled{opacity:.48;}
+.btn-send{background:linear-gradient(135deg,#a07008,var(--gold));border:none;border-radius:var(--radius-sm);padding:10px 15px;color:#0d0d18;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;transition:opacity .15s;}
+.btn-send:disabled{background:rgba(255,255,255,.06);color:rgba(255,255,255,.28);cursor:not-allowed;}
+.btn-mic{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);border-radius:var(--radius-sm);padding:10px 13px;font-size:16px;cursor:pointer;color:var(--text-dim);flex-shrink:0;transition:all .2s;}
+.btn-mic:hover:not(:disabled){background:rgba(255,255,255,.08);color:var(--text);}
+.btn-mic.rec{background:var(--red-bg);border-color:var(--red-border);color:var(--red);animation:mic-ring 1s ease infinite;}
+.btn-mic:disabled{opacity:.28;cursor:not-allowed;}
+@keyframes mic-ring{0%,100%{box-shadow:0 0 0 0 rgba(255,70,70,.38)}50%{box-shadow:0 0 0 7px rgba(255,70,70,0)}}
+.hint-sm{text-align:center;color:var(--text-faint);font-size:10px;font-style:italic;margin-top:6px;}
+
+/* stats */
+.stats-panel{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius);padding:13px 17px;display:none;}
+.stats-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+.stats-hdr h3{color:#aac0ff;font-size:13px;font-family:'Playfair Display',serif;font-weight:400;}
+.btn-x{background:none;border:none;color:rgba(140,150,200,.5);cursor:pointer;font-size:16px;line-height:1;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px;}
+.stat-box{background:rgba(255,255,255,.03);border-radius:8px;padding:8px 11px;}
+.stat-lbl{color:rgba(185,192,255,.38);font-size:10px;margin-bottom:2px;letter-spacing:.04em;text-transform:uppercase;}
+.stat-val{color:#ccd5ff;font-size:16px;font-family:'Playfair Display',serif;}
+.tags-sec{margin-bottom:7px;display:none;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;}
+.tag{border-radius:10px;padding:2px 9px;font-size:11px;}
+.tag-g{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
+.tag-o{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange);}
+.tag-b{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue);}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ CONFIG SCREEN ════════════════ -->
+<div class="screen active" id="screen-config">
+  <div class="hdr" style="max-width:660px">
+    <div class="hdr-flag">🌍</div>
+    <h1>LangBuddy</h1>
+    <p>Your AI language tutor — first time setup</p>
+  </div>
+
+  <div class="card card-gold">
+    <h2 style="margin-bottom:16px">⚙️ Configuration</h2>
+    <div style="display:flex;flex-direction:column;gap:13px">
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Your native language</label>
+          <select id="cfg-native">
+            <option value="French">🇫🇷 French</option>
+            <option value="English">🇬🇧 English</option>
+            <option value="Spanish">🇪🇸 Spanish</option>
+            <option value="Portuguese">🇵🇹 Portuguese</option>
+            <option value="Italian">🇮🇹 Italian</option>
+            <option value="German">🇩🇪 German</option>
+            <option value="Dutch">🇳🇱 Dutch</option>
+            <option value="Russian">🇷🇺 Russian</option>
+            <option value="Chinese">🇨🇳 Chinese</option>
+            <option value="Japanese">🇯🇵 Japanese</option>
+            <option value="Arabic">🇸🇦 Arabic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Language to learn</label>
+          <select id="cfg-target">
+            <option value="German">🇩🇪 German</option>
+            <option value="Spanish">🇪🇸 Spanish</option>
+            <option value="French">🇫🇷 French</option>
+            <option value="Italian">🇮🇹 Italian</option>
+            <option value="Portuguese">🇵🇹 Portuguese</option>
+            <option value="English">🇬🇧 English</option>
+            <option value="Dutch">🇳🇱 Dutch</option>
+            <option value="Russian">🇷🇺 Russian</option>
+            <option value="Japanese">🇯🇵 Japanese</option>
+            <option value="Chinese">🇨🇳 Chinese</option>
+            <option value="Arabic">🇸🇦 Arabic</option>
+            <option value="Korean">🇰🇷 Korean</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Level</label>
+        <div class="levels">
+          <button class="lvl-btn sel" data-lvl="A1" onclick="pickLevel(this)">A1<span>Beginner</span></button>
+          <button class="lvl-btn" data-lvl="A2" onclick="pickLevel(this)">A2<span>Elementary</span></button>
+          <button class="lvl-btn" data-lvl="B1" onclick="pickLevel(this)">B1<span>Intermediate</span></button>
+          <button class="lvl-btn" data-lvl="B2" onclick="pickLevel(this)">B2<span>Upper-inter.</span></button>
+        </div>
+      </div>
+
+      <hr class="div">
+
+      <div class="field">
+        <label>Gemini API key</label>
+        <input type="password" id="cfg-key" placeholder="AIza..." autocomplete="off">
+        <span class="hint-f">Stored in your browser only · never sent anywhere except Google ·
+          <a href="https://aistudio.google.com/app/apikey" target="_blank">Get a free key →</a></span>
+      </div>
+
+      <div class="warn" id="cfg-warn"></div>
+      <button class="btn btn-primary" onclick="saveConfig()" style="width:100%;margin-top:4px">Start learning →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ WELCOME SCREEN ════════════════ -->
+<div class="screen" id="screen-welcome">
+  <div class="hdr" style="max-width:660px">
+    <div class="hdr-flag" id="w-flag">🌍</div>
+    <h1 id="w-title">LangBuddy</h1>
+    <p id="w-sub">Your personal language tutor</p>
+    <div class="hdr-badges">
+      <span class="badge badge-live"><span class="pulse"></span> <span id="w-live">AI active</span></span>
+      <span class="badge badge-cfg" onclick="goConfig()">⚙️ <span id="w-cfg-lbl">Settings</span></span>
+    </div>
+  </div>
+
+  <div class="card card-gold" style="text-align:center">
+    <div style="font-size:46px;margin-bottom:11px" id="w-icon">🎓</div>
+    <h2 id="w-card-h">Ready to learn?</h2>
+    <p id="w-card-p" style="margin-bottom:18px">Your tutor tracks your progress: words learned, common errors, topics covered. Each session is personalized!</p>
+    <button class="btn btn-primary" id="btn-start" onclick="startConversation()">Let's go! 🚀</button>
+    <div style="margin-top:9px">
+      <button class="btn btn-ghost" onclick="goConfig()">⚙️ <span id="w-change-lbl">Change settings</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ CHAT SCREEN ════════════════ -->
+<div class="screen" id="screen-chat">
+  <div class="hdr" style="max-width:660px">
+    <div class="hdr-flag" id="c-flag">🌍</div>
+    <h1 id="c-title">LangBuddy</h1>
+    <p id="c-sub">Your personal language tutor</p>
+    <div class="hdr-badges">
+      <span class="badge badge-live"><span class="pulse"></span> <span id="c-live">AI active</span></span>
+      <span class="badge badge-saved" id="badge-saved">✓ <span id="c-saved-lbl">Saved</span></span>
+      <span class="badge badge-stats" id="badge-stats" onclick="toggleStats()">📊 <span id="stats-txt"></span></span>
+      <span class="badge badge-cfg" onclick="goConfig()">⚙️</span>
+    </div>
+  </div>
+
+  <div class="stats-panel" id="stats-panel">
+    <div class="stats-hdr">
+      <h3>📈 <span id="s-progress">Progress</span></h3>
+      <button class="btn-x" onclick="toggleStats()">✕</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-lbl" id="s-lbl-ss">Sessions</div><div class="stat-val" id="st-s">0</div></div>
+      <div class="stat-box"><div class="stat-lbl" id="s-lbl-mm">Messages</div><div class="stat-val" id="st-m">0</div></div>
+      <div class="stat-box"><div class="stat-lbl" id="s-lbl-ll">Last session</div><div class="stat-val" id="st-d" style="font-size:12px">—</div></div>
+      <div class="stat-box"><div class="stat-lbl" id="s-lbl-tt">Topics</div><div class="stat-val" id="st-t">0</div></div>
+    </div>
+    <div class="tags-sec" id="sec-words"><div class="sec-lbl" id="s-lbl-ww">Words learned</div><div class="tags" id="tags-words"></div></div>
+    <div class="tags-sec" id="sec-errors"><div class="sec-lbl" id="s-lbl-ee">Points to work on</div><div class="tags" id="tags-errors"></div></div>
+    <div class="tags-sec" id="sec-topics"><div class="sec-lbl" id="s-lbl-tp">Topics seen</div><div class="tags" id="tags-topics"></div></div>
+    <button class="btn-danger" onclick="resetProgress()" style="margin-top:6px">🗑️ <span id="s-reset">Reset progress</span></button>
+  </div>
+
+  <div class="chat-box" id="chat-box"></div>
+
+  <div>
+    <div class="sec-lbl" id="c-topic-lbl">Change topic</div>
+    <div class="topics-wrap" id="topics-wrap"></div>
+  </div>
+
+  <div class="audio-bar">
+    <label><input type="checkbox" id="tts-chk" checked onchange="ttsEnabled=this.checked;if(!this.checked&&window.speechSynthesis)speechSynthesis.cancel()"> 🔊 <span id="c-tts-lbl">Auto listen</span></label>
+    <div class="sep"></div>
+    <label id="stt-lbl"><input type="checkbox" id="stt-chk"> 🎙️ <span id="c-mic-lbl">Microphone</span></label>
+    <span id="no-stt" style="display:none;font-size:10px;color:var(--orange);font-style:italic"></span>
+  </div>
+
+  <div>
+    <div class="input-row">
+      <input class="chat-input" id="chat-input" type="text" onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="btn-mic" id="btn-mic" onclick="toggleRec()" disabled>🎙️</button>
+      <button class="btn-send" id="btn-send" onclick="sendMessage()" disabled>➤</button>
+    </div>
+    <p class="hint-sm" id="c-hint">Progress saved automatically 💾 · 📊 stats · 🔊 replay</p>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────
+const SK = "langbuddy-v2";
+let cfg  = { native:"French", target:"German", level:"A1", apiKey:"" };
+let prog = { wordsLearned:[], commonErrors:[], topicsSeen:[], sessionsCount:0, totalMessages:0, lastSession:null };
+let apiHistory = [];
+let loading = false;
+let ttsEnabled = true;
+let isRec = false;
+let recog = null;
+let ttsVoice = null;
+let selectedLevel = "A1";
+
+// ── I18N ──────────────────────────────────────────
+const TR = {
+  French:     {live:"Agent IA actif",cfg:"Paramètres",changeCfg:"Changer les paramètres",ready:"Prêt à apprendre ?",go:"C'est parti ! 🚀",body:"Votre agent mémorise votre progression : mots appris, erreurs fréquentes, sujets abordés. Chaque session est personnalisée !",back:"Bienvenue de retour !",sessions:"Sessions",messages:"Messages",last:"Dernière session",topicsCov:"Sujets abordés",wordsL:"Mots appris",toWork:"Points à travailler",topicsS:"Sujets vus",reset:"Réinitialiser",progress:"Votre progression",saved:"Sauvegardé",changeTopic:"Changer de sujet",autoListen:"Lecture auto",mic:"Micro actif",hint:"Progression sauvegardée 💾 · 📊 bilan · 🔊 réécouter",ph:"Écris en",phRec:"Parle en",noStt:"Non supporté sur ce navigateur",retMsg:"sessions et",words:"mots appris",cont:"Continuer 🚀",start:"Démarrer 🚀"},
+  English:    {live:"AI agent active",cfg:"Settings",changeCfg:"Change settings",ready:"Ready to learn?",go:"Let's go! 🚀",body:"Your tutor tracks your progress: words learned, common errors, topics covered. Each session is personalized!",back:"Welcome back!",sessions:"Sessions",messages:"Messages",last:"Last session",topicsCov:"Topics covered",wordsL:"Words learned",toWork:"Points to work on",topicsS:"Topics seen",reset:"Reset progress",progress:"Your progress",saved:"Saved",changeTopic:"Change topic",autoListen:"Auto listen",mic:"Microphone",hint:"Progress saved automatically 💾 · 📊 stats · 🔊 replay",ph:"Type in",phRec:"Speak in",noStt:"Not supported on this browser",retMsg:"sessions and",words:"words learned",cont:"Continue 🚀",start:"Start 🚀"},
+  Spanish:    {live:"Agente IA activo",cfg:"Ajustes",changeCfg:"Cambiar ajustes",ready:"¿Listo para aprender?",go:"¡Vamos! 🚀",body:"Tu agente recuerda tu progreso: palabras aprendidas, errores frecuentes, temas tratados.",back:"¡Bienvenido de nuevo!",sessions:"Sesiones",messages:"Mensajes",last:"Última sesión",topicsCov:"Temas cubiertos",wordsL:"Palabras aprendidas",toWork:"Puntos a trabajar",topicsS:"Temas vistos",reset:"Reiniciar",progress:"Tu progreso",saved:"Guardado",changeTopic:"Cambiar tema",autoListen:"Escucha auto",mic:"Micrófono",hint:"Progreso guardado 💾 · 📊 estadísticas · 🔊 repetir",ph:"Escribe en",phRec:"Habla en",noStt:"No compatible con este navegador",retMsg:"sesiones y",words:"palabras aprendidas",cont:"Continuar 🚀",start:"Empezar 🚀"},
+  Portuguese: {live:"Agente IA ativo",cfg:"Configurações",changeCfg:"Mudar configurações",ready:"Pronto para aprender?",go:"Vamos! 🚀",body:"Seu agente acompanha seu progresso: palavras aprendidas, erros comuns, tópicos abordados.",back:"Bem-vindo de volta!",sessions:"Sessões",messages:"Mensagens",last:"Última sessão",topicsCov:"Tópicos abordados",wordsL:"Palavras aprendidas",toWork:"Pontos a trabalhar",topicsS:"Tópicos vistos",reset:"Redefinir",progress:"Seu progresso",saved:"Salvo",changeTopic:"Mudar tópico",autoListen:"Escuta auto",mic:"Microfone",hint:"Progresso salvo 💾 · 📊 estatísticas · 🔊 repetir",ph:"Escreve em",phRec:"Fala em",noStt:"Não suportado neste navegador",retMsg:"sessões e",words:"palavras aprendidas",cont:"Continuar 🚀",start:"Começar 🚀"},
+  Italian:    {live:"Agente IA attivo",cfg:"Impostazioni",changeCfg:"Cambia impostazioni",ready:"Pronto ad imparare?",go:"Andiamo! 🚀",body:"Il tuo agente tiene traccia dei progressi: parole apprese, errori comuni, argomenti trattati.",back:"Bentornato!",sessions:"Sessioni",messages:"Messaggi",last:"Ultima sessione",topicsCov:"Argomenti trattati",wordsL:"Parole apprese",toWork:"Punti da lavorare",topicsS:"Argomenti visti",reset:"Azzerare",progress:"I tuoi progressi",saved:"Salvato",changeTopic:"Cambia argomento",autoListen:"Ascolto auto",mic:"Microfono",hint:"Progresso salvato 💾 · 📊 statistiche · 🔊 ripeti",ph:"Scrivi in",phRec:"Parla in",noStt:"Non supportato in questo browser",retMsg:"sessioni e",words:"parole apprese",cont:"Continua 🚀",start:"Inizia 🚀"},
+  German:     {live:"KI-Agent aktiv",cfg:"Einstellungen",changeCfg:"Einstellungen ändern",ready:"Bereit zum Lernen?",go:"Los geht's! 🚀",body:"Dein Agent merkt sich deinen Fortschritt: Wörter, Fehler, Themen. Jede Sitzung ist personalisiert!",back:"Willkommen zurück!",sessions:"Sitzungen",messages:"Nachrichten",last:"Letzte Sitzung",topicsCov:"Behandelte Themen",wordsL:"Gelernte Wörter",toWork:"Punkte zu üben",topicsS:"Gesehene Themen",reset:"Zurücksetzen",progress:"Dein Fortschritt",saved:"Gespeichert",changeTopic:"Thema wechseln",autoListen:"Auto-Anhören",mic:"Mikrofon",hint:"Fortschritt gespeichert 💾 · 📊 Statistik · 🔊 wiederholen",ph:"Schreibe auf",phRec:"Sprich auf",noStt:"In diesem Browser nicht unterstützt",retMsg:"Sitzungen und",words:"Wörter gelernt",cont:"Weitermachen 🚀",start:"Starten 🚀"},
+};
+function t(k){ return (TR[cfg.native]||TR.English)[k]||k; }
+
+// ── LANGUAGE META ─────────────────────────────────
+const FLAGS   = {German:"🇩🇪",Spanish:"🇪🇸",French:"🇫🇷",Italian:"🇮🇹",Portuguese:"🇵🇹",English:"🇬🇧",Dutch:"🇳🇱",Russian:"🇷🇺",Japanese:"🇯🇵",Chinese:"🇨🇳",Arabic:"🇸🇦",Korean:"🇰🇷"};
+const TTS_MAP = {German:"de-DE",Spanish:"es-ES",French:"fr-FR",Italian:"it-IT",Portuguese:"pt-PT",English:"en-US",Dutch:"nl-NL",Russian:"ru-RU",Japanese:"ja-JP",Chinese:"zh-CN",Arabic:"ar-SA",Korean:"ko-KR"};
+
+const TOPICS_MAP = {
+  German:     [["👋","Sich vorstellen","Stell dich vor! Wie heißt du?"],["🏠","Zuhause","Beschreib dein Haus."],["🍕","Essen","Was isst du gern?"],["🌤️","Wetter","Wie ist das Wetter?"],["👨‍👩‍👧","Familie","Erzähl von deiner Familie!"],["🎯","Hobbys","Was machst du in der Freizeit?"]],
+  Spanish:    [["👋","Presentarse","¡Preséntate! ¿Cómo te llamas?"],["🏠","Casa","Describe tu casa."],["🍕","Comida","¿Qué te gusta comer?"],["🌤️","Tiempo","¿Qué tiempo hace?"],["👨‍👩‍👧","Familia","¡Cuéntame sobre tu familia!"],["🎯","Pasatiempos","¿Qué haces en tu tiempo libre?"]],
+  French:     [["👋","Se présenter","Présente-toi ! Comment tu t'appelles ?"],["🏠","La maison","Décris ta maison."],["🍕","La nourriture","Qu'est-ce que tu aimes manger ?"],["🌤️","La météo","Quel temps fait-il ?"],["👨‍👩‍👧","La famille","Parle-moi de ta famille !"],["🎯","Les loisirs","Que fais-tu dans ton temps libre ?"]],
+  Italian:    [["👋","Presentarsi","Presentati! Come ti chiami?"],["🏠","Casa","Descrivi la tua casa."],["🍕","Cibo","Cosa ti piace mangiare?"],["🌤️","Tempo","Che tempo fa?"],["👨‍👩‍👧","Famiglia","Parlami della tua famiglia!"],["🎯","Hobby","Cosa fai nel tempo libero?"]],
+  Portuguese: [["👋","Apresentar-se","Apresenta-te! Como te chamas?"],["🏠","Casa","Descreve a tua casa."],["🍕","Comida","O que gostas de comer?"],["🌤️","Tempo","Que tempo faz?"],["👨‍👩‍👧","Família","Fala-me da tua família!"],["🎯","Passatempos","O que fazes nos tempos livres?"]],
+  English:    [["👋","Introduce","Introduce yourself! What's your name?"],["🏠","Home","Describe your home."],["🍕","Food","What do you like to eat?"],["🌤️","Weather","What's the weather like?"],["👨‍👩‍👧","Family","Tell me about your family!"],["🎯","Hobbies","What are your hobbies?"]],
+};
+function getTopics(){ return TOPICS_MAP[cfg.target]||TOPICS_MAP.English; }
+
+// ── STORAGE ───────────────────────────────────────
+function loadAll(){
+  try{ const d=JSON.parse(localStorage.getItem(SK)||'{}'); if(d.cfg)cfg=d.cfg; if(d.prog)prog=d.prog; }catch(e){}
+}
+function saveAll(){
+  try{ localStorage.setItem(SK,JSON.stringify({cfg,prog})); }catch(e){}
+}
+function flashSaved(){
+  const el=document.getElementById('badge-saved');
+  el.style.display='inline-flex';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',2000);
+}
+
+// ── CONFIG ────────────────────────────────────────
+function pickLevel(btn){
+  document.querySelectorAll('.lvl-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedLevel=btn.dataset.lvl;
+}
+function goConfig(){
+  document.getElementById('cfg-native').value=cfg.native;
+  document.getElementById('cfg-target').value=cfg.target;
+  document.getElementById('cfg-key').value=cfg.apiKey;
+  selectedLevel=cfg.level;
+  document.querySelectorAll('.lvl-btn').forEach(b=>b.classList.toggle('sel',b.dataset.lvl===cfg.level));
+  document.getElementById('cfg-warn').style.display='none';
+  showScreen('config');
+}
+function saveConfig(){
+  const key=document.getElementById('cfg-key').value.trim();
+  const native=document.getElementById('cfg-native').value;
+  const target=document.getElementById('cfg-target').value;
+  const warn=document.getElementById('cfg-warn');
+  if(!key){ warn.textContent='Please enter your Gemini API key.'; warn.style.display='block'; return; }
+  if(native===target){ warn.textContent='Native and target language must be different.'; warn.style.display='block'; return; }
+  warn.style.display='none';
+  cfg={native,target,level:selectedLevel,apiKey:key};
+  saveAll();
+  applyI18n();
+  showScreen('welcome');
+}
+
+// ── I18N APPLICATION ──────────────────────────────
+function applyI18n(){
+  const flag=FLAGS[cfg.target]||'🌍';
+  const subtitle=cfg.level+' · '+cfg.native+' → '+cfg.target;
+  // headers
+  ['w','c'].forEach(p=>{
+    el(p+'-flag').textContent=flag;
+    el(p+'-title').textContent='LangBuddy · '+cfg.target;
+    el(p+'-sub').textContent=subtitle;
+  });
+  el('w-live').textContent=t('live'); el('c-live').textContent=t('live');
+  el('w-cfg-lbl').textContent=t('cfg');
+  el('w-change-lbl').textContent=t('changeCfg');
+  // welcome card
+  const ret=prog.sessionsCount>0;
+  el('w-icon').textContent=ret?'👋':'🎓';
+  el('w-card-h').textContent=ret?t('back'):t('ready');
+  el('w-card-p').innerHTML=ret
+    ? `<strong style="color:var(--gold)">${prog.sessionsCount}</strong> ${t('retMsg')} <strong style="color:var(--gold)">${prog.wordsLearned.length}</strong> ${t('words')}. <em style="color:var(--text-faint)">${prog.lastSession||'—'}</em>`
+    : t('body');
+  el('btn-start').textContent=ret?t('cont'):t('start');
+  // stats
+  el('s-progress').textContent=t('progress');
+  el('s-lbl-ss').textContent=t('sessions'); el('s-lbl-mm').textContent=t('messages');
+  el('s-lbl-ll').textContent=t('last');     el('s-lbl-tt').textContent=t('topicsCov');
+  el('s-lbl-ww').textContent=t('wordsL');   el('s-lbl-ee').textContent=t('toWork');
+  el('s-lbl-tp').textContent=t('topicsS');  el('s-reset').textContent=t('reset');
+  el('c-saved-lbl').textContent=t('saved');
+  // chat
+  el('c-topic-lbl').textContent=t('changeTopic');
+  el('c-tts-lbl').textContent=t('autoListen');
+  el('c-mic-lbl').textContent=t('mic');
+  el('c-hint').textContent=t('hint');
+  el('chat-input').placeholder=t('ph')+' '+cfg.target+'...';
+  el('no-stt').textContent=t('noStt');
+  // topics
+  renderTopics();
+  // re-init TTS voice
+  if(window.speechSynthesis){ loadVoice(); }
+  if(recog) recog.lang=TTS_MAP[cfg.target]||'en-US';
+}
+
+// ── TTS ───────────────────────────────────────────
+function loadVoice(){
+  const vs=speechSynthesis.getVoices();
+  const code=TTS_MAP[cfg.target]||'en-US';
+  ttsVoice=vs.find(v=>v.lang===code)||vs.find(v=>v.lang.startsWith(code.split('-')[0]))||null;
+}
+function initTTS(){
+  if(!window.speechSynthesis)return;
+  loadVoice();
+  speechSynthesis.onvoiceschanged=loadVoice;
+}
+function speak(text, btnId){
+  if(!window.speechSynthesis)return;
+  if(speechSynthesis.speaking){ speechSynthesis.cancel(); resetTtsBtns(); return; }
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=TTS_MAP[cfg.target]||'en-US'; u.rate=0.84; u.pitch=1;
+  if(ttsVoice)u.voice=ttsVoice;
+  setTtsBtn(btnId,true);
+  u.onend=()=>setTtsBtn(btnId,false);
+  u.onerror=()=>setTtsBtn(btnId,false);
+  speechSynthesis.speak(u);
+}
+function setTtsBtn(id,on){
+  const b=document.querySelector(`.btn-tts[data-id="${id}"]`);
+  if(b){b.textContent=on?'⏹️':'🔊';b.classList.toggle('on',on);}
+}
+function resetTtsBtns(){ document.querySelectorAll('.btn-tts').forEach(b=>{b.textContent='🔊';b.classList.remove('on');}); }
+
+// ── STT ───────────────────────────────────────────
+function initSTT(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ el('stt-lbl').style.display='none'; el('no-stt').style.display='inline'; return; }
+  recog=new SR();
+  recog.lang=TTS_MAP[cfg.target]||'en-US';
+  recog.continuous=false; recog.interimResults=true;
+  recog.onresult=e=>{
+    const txt=Array.from(e.results).map(r=>r[0].transcript).join('');
+    el('chat-input').value=txt;
+    if(e.results[e.results.length-1].isFinal){ stopRec(); setTimeout(sendMessage,400); }
+  };
+  recog.onerror=()=>stopRec();
+  recog.onend=()=>{ if(isRec)stopRec(); };
+  el('btn-mic').disabled=false;
+}
+function toggleRec(){ if(loading)return; isRec?stopRec():startRec(); }
+function startRec(){
+  if(!recog)return;
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  isRec=true;
+  const b=el('btn-mic'); b.classList.add('rec'); b.textContent='⏹️';
+  el('chat-input').value='';
+  el('chat-input').placeholder=t('phRec')+' '+cfg.target+'...';
+  try{ recog.start(); }catch(e){ stopRec(); }
+}
+function stopRec(){
+  isRec=false;
+  const b=el('btn-mic'); b.classList.remove('rec'); b.textContent='🎙️';
+  el('chat-input').placeholder=t('ph')+' '+cfg.target+'...';
+  try{ recog.stop(); }catch(e){}
+}
+
+// ── TOPICS ────────────────────────────────────────
+function renderTopics(){
+  const wrap=el('topics-wrap'); wrap.innerHTML='';
+  getTopics().forEach(([emoji,label,prompt])=>{
+    const b=document.createElement('button');
+    b.className='btn-topic'; b.textContent=emoji+' '+label;
+    b.onclick=()=>useTopic(prompt);
+    wrap.appendChild(b);
+  });
+}
+
+// ── CHAT UI ───────────────────────────────────────
+function addMsg(role,content){
+  const box=el('chat-box');
+  const div=document.createElement('div');
+  div.className='msg '+(role==='user'?'user':'agent');
+  if(role==='user'){
+    div.innerHTML=`<div class="bubble user">${esc(content)}</div><span class="msg-lbl">You</span>`;
+  } else {
+    const {main,tr}=parseReply(content);
+    const id='m'+Date.now();
+    div.innerHTML=`<div class="bubble agent"><span>${esc(main)}</span>${tr?`<div class="bubble-tr">${FLAGS[cfg.native]||'💬'} ${esc(tr)}</div>`:''}</div><span class="msg-lbl">${FLAGS[cfg.target]||'🌍'} Tutor <button class="btn-tts" data-id="${id}" onclick="speak(${JSON.stringify(main)},'${id}')">🔊</button></span>`;
+    if(ttsEnabled) setTimeout(()=>speak(main,id),180);
+  }
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+}
+function showTyping(){
+  const box=el('chat-box');
+  const d=document.createElement('div');
+  d.id='typing'; d.className='typing';
+  d.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+function hideTyping(){ document.getElementById('typing')?.remove(); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function parseReply(text){
+  const clean=text.replace(/📊 STATS:[\s\S]*$/,'').trim();
+  const m=clean.match(/\n[🇫🇷🇬🇧🇪🇸🇮🇹🇵🇹🇩🇪🇳🇱🇷🇺🇯🇵🇨🇳🇸🇦🇰🇷]\s*([\s\S]*)$/u);
+  if(m) return {main:clean.slice(0,m.index).trim(),tr:m[1].trim()};
+  return {main:clean,tr:null};
+}
+function parseBilan(text){
+  const m=text.match(/📊 STATS:(.*)/s);
+  if(!m)return null;
+  const ex=k=>{ const r=m[1].match(new RegExp(`${k}=\\[([^\\]]*)\\]`)); if(!r||!r[1].trim())return[]; return r[1].split(',').map(s=>s.trim()).filter(Boolean); };
+  return{wordsLearned:ex('words'),commonErrors:ex('errors'),topicsSeen:ex('topics')};
+}
+
+// ── GEMINI API ────────────────────────────────────
+function buildSys(){
+  return `You are a friendly ${cfg.target} language tutor for ${cfg.native} speakers at level ${cfg.level}.
+
+Rules:
+1. Speak ONLY in ${cfg.target} at ${cfg.level} level — short, clear sentences appropriate for the level
+2. After each learner message: give a brief correction OR praise, then ask a simple follow-up question
+3. End EVERY reply with a short translation in ${cfg.native} on a new line starting with the ${cfg.native} flag emoji
+4. Track progress cumulatively
+
+STRICT format for every reply:
+[Your message in ${cfg.target}]
+${FLAGS[cfg.native]||'💬'} [Brief translation in ${cfg.native}]
+📊 STATS: words=[word1,word2] errors=[error1] topics=[topic1]
+
+STATS: list ALL words learned so far cumulatively across sessions.
+${prog.wordsLearned.length>0?'Already known: '+prog.wordsLearned.join(', '):''}
+${prog.commonErrors.length>0?'Common errors: '+prog.commonErrors.join(', '):''}
+${prog.topicsSeen.length>0?'Topics seen: '+prog.topicsSeen.join(', '):''}
+${prog.sessionsCount>0?'This is session '+prog.sessionsCount+'. Welcome the learner back warmly!':''}
+Stay encouraging, patient and friendly!`;
+}
+async function callGemini(userText){
+  apiHistory.push({role:'user',parts:[{text:userText}]});
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cfg.apiKey}`;
+  const res=await fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      system_instruction:{parts:[{text:buildSys()}]},
+      contents:apiHistory,
+      generationConfig:{maxOutputTokens:800,temperature:0.75}
+    })
+  });
+  if(!res.ok){ const e=await res.json(); throw new Error(e.error?.message||'API error '+res.status); }
+  const data=await res.json();
+  const reply=data.candidates?.[0]?.content?.parts?.[0]?.text||'Sorry, an error occurred.';
+  apiHistory.push({role:'model',parts:[{text:reply}]});
+  return reply;
+}
+function applyBilan(reply){
+  const b=parseBilan(reply);
+  if(!b)return;
+  const merge=(a,x)=>[...new Set([...a,...x])];
+  prog.wordsLearned=merge(prog.wordsLearned,b.wordsLearned);
+  prog.commonErrors=merge(prog.commonErrors,b.commonErrors);
+  prog.topicsSeen=merge(prog.topicsSeen,b.topicsSeen);
+  prog.totalMessages++;
+  prog.lastSession=new Date().toLocaleDateString();
+  el('badge-stats').style.display='inline-flex';
+  el('stats-txt').textContent=`${prog.totalMessages} msg · ${prog.wordsLearned.length} ${t('wordsL').toLowerCase()}`;
+  saveAll(); flashSaved();
+}
+
+// ── CONVERSATION ──────────────────────────────────
+async function startConversation(){
+  prog.sessionsCount++;
+  showScreen('chat');
+  setLoad(true); showTyping();
+  try{
+    const reply=await callGemini(`Start the conversation. Greet the learner warmly and propose to practice ${cfg.target} at level ${cfg.level}.`);
+    hideTyping(); addMsg('assistant',reply); applyBilan(reply);
+  }catch(e){ hideTyping(); addMsg('assistant','Error: '+e.message); }
+  setLoad(false);
+  el('btn-send').disabled=false;
+}
+async function sendMessage(){
+  const inp=el('chat-input');
+  const text=inp.value.trim();
+  if(!text||loading)return;
+  inp.value='';
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  addMsg('user',text); setLoad(true); showTyping();
+  try{
+    const reply=await callGemini(text);
+    hideTyping(); addMsg('assistant',reply); applyBilan(reply);
+  }catch(e){ hideTyping(); addMsg('assistant','Error: '+e.message); }
+  setLoad(false);
+}
+function useTopic(prompt){ if(loading)return; el('chat-input').value=prompt; sendMessage(); }
+function setLoad(v){
+  loading=v;
+  el('btn-send').disabled=v||!el('chat-input').value.trim();
+  el('chat-input').disabled=v;
+  if(recog)el('btn-mic').disabled=v;
+  document.querySelectorAll('.btn-topic').forEach(b=>b.disabled=v);
+}
+el('chat-input').addEventListener('input',function(){ el('btn-send').disabled=loading||!this.value.trim(); });
+
+// ── STATS ─────────────────────────────────────────
+function toggleStats(){
+  const p=el('stats-panel');
+  const open=p.style.display==='none'||p.style.display==='';
+  p.style.display=open?'block':'none';
+  if(open) renderStats();
+}
+function renderStats(){
+  el('st-s').textContent=prog.sessionsCount; el('st-m').textContent=prog.totalMessages;
+  el('st-d').textContent=prog.lastSession||'—'; el('st-t').textContent=prog.topicsSeen.length;
+  const rt=(elId,secId,items,cls)=>{
+    el(elId).innerHTML=items.map(w=>`<span class="tag ${cls}">${w}</span>`).join('');
+    el(secId).style.display=items.length?'block':'none';
+  };
+  rt('tags-words','sec-words',prog.wordsLearned,'tag-g');
+  rt('tags-errors','sec-errors',prog.commonErrors,'tag-o');
+  rt('tags-topics','sec-topics',prog.topicsSeen,'tag-b');
+}
+async function resetProgress(){
+  prog={wordsLearned:[],commonErrors:[],topicsSeen:[],sessionsCount:0,totalMessages:0,lastSession:null};
+  apiHistory=[];
+  saveAll();
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  el('stats-panel').style.display='none';
+  el('badge-stats').style.display='none';
+  el('chat-box').innerHTML='';
+  applyI18n();
+  showScreen('welcome');
+}
+
+// ── NAVIGATION ────────────────────────────────────
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  el('screen-'+name).classList.add('active');
+}
+function el(id){ return document.getElementById(id); }
+
+// ── INIT ──────────────────────────────────────────
+loadAll();
+initTTS();
+initSTT();
+if(cfg.apiKey){ applyI18n(); showScreen('welcome'); } else { showScreen('config'); }
+</script>
+</body>
+</html>
